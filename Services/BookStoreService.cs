@@ -80,7 +80,7 @@ namespace ExaminationApp.Services
         public async Task<List<Book>> FilterBooksAsync(string author, string title, int bookGenre)
         {
             return await _context.Books
-                .Where(b => b.Author == author || b.Title == title || ((int)b.Genre) == bookGenre)
+                .Where(b => b.Author == author && b.Title == title && ((int)b.Genre) == bookGenre && bookGenre != 0)
                 .ToListAsync();
         }
 
@@ -96,20 +96,20 @@ namespace ExaminationApp.Services
         // Взять топ продаж. Первые 3 книги по кол-ву проданных экземпляров
         public async Task<List<Book>> GetTopSalesAsync(int top = 3)
         {
-            return await _context.SoldBooks
-                .OrderByDescending(s => s.SoldAmount)
+            return await _context.Books
+                .OrderByDescending(x => x.SoldBooks.Sum(b => b.SoldAmount))
                 .Take(top)
-                .Select(s => s.Book)
                 .ToListAsync();
         }
 
         // Взять топ авторов. Первые 3 автора по продажам их книг
         public async Task<List<string>> GetTopAuthorsAsync(int top = 3)
         {
-            return await _context.SoldBooks
-                .OrderByDescending(s => s.SoldAmount)
+            return await _context.Books
+                .GroupBy(b => b.Author)
+                .OrderByDescending(x => x.SelectMany(c => c.SoldBooks).Sum(b => b.SoldAmount))
                 .Take(top)
-                .Select(s => s.Book.Author)
+                .Select(x => x.Key)
                 .ToListAsync();
         }
 
@@ -119,12 +119,20 @@ namespace ExaminationApp.Services
             var now = DateTime.Now;
             var timeNeeded = now.AddDays(-days);
 
-            return await _context.SoldBooks
-                .Where(s => s.SellingDate <= timeNeeded)
-                .OrderByDescending(s => s.SoldAmount)
+            //return await _context.SoldBooks
+            //    .Where(s => s.SellingDate <= timeNeeded)
+            //    .OrderByDescending(s => s.SoldAmount)
+            //    .Take(top)
+            //    .Select(s => s.Book.Genre)
+            //    .Distinct()
+            //    .ToListAsync();
+            return await _context.Books
+                .GroupBy(b => b.Genre)
+                .OrderByDescending(x => x.SelectMany(c => c.SoldBooks
+                    .Where(b => b.SellingDate >= timeNeeded))
+                .Sum(b => b.SoldAmount))
                 .Take(top)
-                .Select(s => s.Book.Genre)
-                .Distinct()
+                .Select(x => x.Key)
                 .ToListAsync();
         }
     }
