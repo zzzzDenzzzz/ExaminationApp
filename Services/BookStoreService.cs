@@ -119,13 +119,6 @@ namespace ExaminationApp.Services
             var now = DateTime.Now;
             var timeNeeded = now.AddDays(-days);
 
-            //return await _context.SoldBooks
-            //    .Where(s => s.SellingDate <= timeNeeded)
-            //    .OrderByDescending(s => s.SoldAmount)
-            //    .Take(top)
-            //    .Select(s => s.Book.Genre)
-            //    .Distinct()
-            //    .ToListAsync();
             return await _context.Books
                 .GroupBy(b => b.Genre)
                 .OrderByDescending(x => x.SelectMany(c => c.SoldBooks
